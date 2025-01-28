@@ -1,6 +1,7 @@
 package com.cleartax.training_superheroes.services;
 
 import com.cleartax.training_superheroes.config.SqsConfig;
+import com.cleartax.training_superheroes.dto.MessageBody;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
@@ -18,34 +19,40 @@ public class SuperHeroConsumer {
     @Autowired
     private SqsClient sqsClient;
 
+    @Autowired
+    private MessageBody message;
+
     @Scheduled(fixedDelay = 2000) // Poll every 2 seconds
     public void pollMessages() {
         System.out.println("Polling for messages...");
 
-        ReceiveMessageResponse receiveMessageResponse = sqsClient.receiveMessage(ReceiveMessageRequest.builder()
-                .queueUrl(sqsConfig.getQueueUrl())
-                .maxNumberOfMessages(5) // Batch size
-                .waitTimeSeconds(10) // Long polling
-                .build());
+        try {
+            ReceiveMessageResponse receiveMessageResponse = sqsClient.receiveMessage(ReceiveMessageRequest.builder()
+                    .queueUrl(sqsConfig.getQueueUrl())
+                    .maxNumberOfMessages(5) // Batch size
+                    .waitTimeSeconds(10) // Long polling
+                    .build());
 
-        List<Message> messages = receiveMessageResponse.messages();
+            List<Message> messages = receiveMessageResponse.messages();
 
-        if (messages.isEmpty()) {
-            System.out.println("No messages received");
-            return;
-        }
+            if (messages.isEmpty()) {
+                System.out.println("No messages received");
+                return;
+            }
 
-        for (Message message : messages) {
-            processMessage(message);
+            for (Message message : messages) {
+                System.out.println("Received message: " + message.body());
+                processMessage(message);
+            }
+        } catch (Exception e) {
+            System.err.println("Error polling messages: " + e.getMessage());
+            e.printStackTrace();
         }
     }
 
     private void processMessage(Message message) {
         try {
-            // Process the message body
             System.out.println("Processing message: " + message.body());
-
-            // Delete the message after successful processing
             deleteMessage(message.receiptHandle());
         } catch (Exception e) {
             System.err.println("Error processing message: " + e.getMessage());
@@ -65,9 +72,4 @@ public class SuperHeroConsumer {
             e.printStackTrace();
         }
     }
-
-//    public String consumeSuperhero()
-//    {
-//        return "";
-//    }
 }

@@ -1,5 +1,8 @@
 package com.cleartax.training_superheroes.services;
 
+import com.cleartax.training_superheroes.dto.MessageBody;
+import com.cleartax.training_superheroes.repos.MessageRepository;
+import com.cleartax.training_superheroes.repos.SuperheroRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import software.amazon.awssdk.services.sqs.SqsClient;
@@ -13,8 +16,15 @@ public class SqsService {
     @Autowired
     private final SqsClient sqsClient;
 
+    @Autowired
+    public MessageRepository messageRepository;
+
+    @Autowired
+    private MessageBody message;
+
     public SqsService(SqsClient sqsClient) {
         this.sqsClient = sqsClient;
+//        this.messageRepository = messageRepository;
     }
 
     // Send a message to the queue
@@ -26,6 +36,8 @@ public class SqsService {
                 .build();
 
         sqsClient.sendMessage(request);
+        message.setMessage(messageBody);
+        messageRepository.save(message);
         System.out.println("Message sent: " + messageBody);
     }
 
